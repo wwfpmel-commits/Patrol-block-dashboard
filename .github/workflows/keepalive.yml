@@ -1,0 +1,31 @@
+name: Visit Streamlit app
+on:
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+jobs:
+  visit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: |
+          pip install playwright
+          playwright install --with-deps chromium
+      - run: |
+          python - <<'EOF'
+          from playwright.sync_api import sync_playwright
+          url = "https://patrol-block-dashboard.streamlit.app/"
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              page = b.new_page()
+              page.goto(url, wait_until="domcontentloaded", timeout=60000)
+              try:
+                  page.get_by_role("button", name="Yes, get this app back up!").click(timeout=15000)
+                  print("woke the app")
+              except Exception:
+                  print("app was already awake")
+              page.wait_for_timeout(30000)
+              b.close()
+          EOF
